@@ -11,7 +11,7 @@ class Command(EasyDumpCommand):
     def handle(self, *args, **options):
         
         dump = options['dump']
-        manifest = self.get_manifest(dump)
+        manifest = self.get_manifest(dump, options['host'], options['port'])
         
         two_weeks_ago = datetime.now() - timedelta(days=14)
         three_months_ago = datetime.now() - timedelta(days=90)

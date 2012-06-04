@@ -13,7 +13,7 @@ class Command(EasyDumpCommand):
     def handle(self, *args, **options):
         
         dump = args[0]
-        manifest = self.get_manifest(dump)
+        manifest = self.get_manifest(dump, options['host'], options['port'])
         
         # do the dump only if it already hasn't been done yet
         if not os.path.exists('easydump'):

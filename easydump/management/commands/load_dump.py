@@ -16,7 +16,7 @@ class Command(EasyDumpCommand):
         
         # get manifest
         dump = args[0]
-        manifest = self.get_manifest(dump)
+        manifest = self.get_manifest(dump, options['host'], options['port'])
         
         # get the key for the correct dump (the latest one)
         key = self.get_latest(manifest.bucket, dump)

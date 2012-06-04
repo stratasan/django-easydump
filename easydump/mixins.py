@@ -2,10 +2,10 @@ import os
 from optparse import make_option
 
 from django.conf import settings
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 from django.db import models
 
-from boto.s3.connection import S3Connection
+from boto.s3.connection import S3Connection, OrdinaryCallingFormat
 
 import dumpers
 
@@ -13,7 +13,7 @@ class Manifest(object):
     """
     Wrapper class that makes working with manifests easier.
     """
-    def __init__(self, md):
+    def __init__(self, md, host, port):
         self.bucket_name = md.get('s3-bucket')
         self.database_name = md.get('database')
         self.exclude_models = md.get('exclude-models', [])
@@ -22,7 +22,7 @@ class Manifest(object):
         self.jobs = md.get('jobs', 2)
         self.reduced_redundancy = md.get('reduced-redundancy', True)
 
-        self.bucket = self._get_bucket()
+        self.bucket = self._get_bucket(host, port)
         self.database = self._get_database()
         self.tables = self._get_tables()
 
@@ -30,8 +30,12 @@ class Manifest(object):
         self.dump_cmd = dumper.get_dump_cmd(self)
         self.restore_cmd = dumper.get_restore_cmd(self)
 
-    def _get_bucket(self):
-        conn = S3Connection(settings.AWS_ACCESS_KEY, settings.AWS_SECRET_KEY)
+    def _get_bucket(self, host, port):
+        if host and port:
+            conn = S3Connection(settings.AWS_ACCESS_KEY, settings.AWS_SECRET_KEY,
+                calling_format=OrdinaryCallingFormat(), is_secure=False, host=host, port=port)
+        else:
+            conn = S3Connection(settings.AWS_ACCESS_KEY, settings.AWS_SECRET_KEY)
         return conn.get_bucket(self.bucket_name)
 
     def _get_database(self):
@@ -81,15 +85,20 @@ class Manifest(object):
 
         return set(dump_tables + self.extra_tables)
 
-class EasyDumpCommand(NoArgsCommand):
+class EasyDumpCommand(BaseCommand):
     """
     Common methods for all dump commands
     """
 
-    def get_manifest(self, name):
+    option_list = BaseCommand.option_list + (
+        make_option('--host', dest='host'),
+        make_option('--port', type='int', dest='port'),
+        )
+
+    def get_manifest(self, name, host, port):
         try:
             manifest_dict = settings.EASYDUMP_MANIFESTS[name]
         except KeyError:
             raise KeyError("Can't find manifest, is it in EASYDUMP_MANIFESTS?")
 
-        return Manifest(manifest_dict)
+        return Manifest(manifest_dict, host, port)
