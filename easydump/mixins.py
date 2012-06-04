@@ -20,6 +20,7 @@ class Manifest(object):
         self.extra_tables = md.get('extra-tables', [])
         self.jobs = md.get('jobs', 2)
         self.reduced_redundancy = md.get('reduced-redundancy', True)
+        self.separate_files = md.get('separate-files', False)
 
         # Make compatible with namespaced models
         # A better solution is needed to properly handle models with the same name in different namespaces

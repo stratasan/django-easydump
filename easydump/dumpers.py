@@ -33,18 +33,31 @@ class Dumper(object):
         db_port = manifest.database['PORT']
         db_pass = manifest.database['PASSWORD']
         
-        tables = manifest.tables
-        
-        if hasattr(self, "format_for_dump"):
-            vars = self.format_for_dump(**locals())
+        all_tables = manifest.tables
+
+        if manifest.separate_files:
+            cmds = []
+            for table in all_tables:
+                tables = (table,)
+                id = '-' + table
+                if hasattr(self, "format_for_dump"):
+                    vars = self.format_for_dump(**locals())
+                else:
+                    vars = locals()
+                cmds.append( self.dump_cmd.format(**vars) )
+            return "; ".join(cmds)
+
         else:
-            vars = locals()
-        
-        return self.dump_cmd.format(**vars)
+            tables = all_tables
+            if hasattr(self, "format_for_dump"):
+                vars = self.format_for_dump(**locals())
+            else:
+                vars = locals()
+            return self.dump_cmd.format(**vars)
 
 class PostgresDumper(Dumper):
     restore_cmd = 'pg_restore -U {db_user} {db_host} {db_port} {db_pass} --dbname {db_name} --jobs={jobs} --no-owner easydump'
-    dump_cmd = "pg_dump -U {db_user} {db_host} {db_port} {db_pass} --no-acl --clean --oids --no-owner --format=c {tables} {db_name} > easydump"
+    dump_cmd = "pg_dump -U {db_user} {db_host} {db_port} {db_pass} --no-acl --clean --oids --no-owner --format=c {tables} {db_name} > easydump{id}"
     
     @classmethod
     def format_for_dump(cls, **kwargs):
@@ -84,3 +97,4 @@ class MySQLDumper(Dumper):
 class OracleDumper(Dumper):
     restore_cmd = None
     dump_cmd = None
+
