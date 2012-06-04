@@ -17,10 +17,13 @@ class Manifest(object):
         self.bucket_name = md.get('s3-bucket')
         self.database_name = md.get('database')
         self.exclude_models = md.get('exclude-models', [])
-        self.include_models = md.get('include-models', None)
         self.extra_tables = md.get('extra-tables', [])
         self.jobs = md.get('jobs', 2)
         self.reduced_redundancy = md.get('reduced-redundancy', True)
+
+        # Make compatible with namespaced models
+        # A better solution is needed to properly handle models with the same name in different namespaces
+        self.include_models = map(lambda s: s.split('.')[-1], md.get('include-models', None))
 
         self.bucket = self._get_bucket(host, port)
         self.database = self._get_database()
@@ -74,6 +77,8 @@ class Manifest(object):
             if self.include_models:
                 # if an included-models is given, only add models that are
                 # listed there
+                # FIXME: this line has can do different things based on
+                #   whether included_models is a string or array
                 add_to_dump = model_name in self.include_models
             else:
                 # if no include-models is given, add everything, unless
